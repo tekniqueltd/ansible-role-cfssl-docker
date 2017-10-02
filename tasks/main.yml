@@ -1,0 +1,222 @@
+---
+- name: Install ssl-cert
+  apt:
+    name: ssl-cert
+  become: yes
+  when: cfssl_docker_nginx_tls
+
+- name: Ensure cfssl user exists
+  user:
+    name: "{{ cfssl_docker_user }}"
+    state: present
+    createhome: yes
+    home: "{{ cfssl_docker_user_home }}"
+    groups: "{{ cfssl_docker_groups }}"
+  become: yes
+
+- name: Create cfssl ca key
+  copy:
+    content: "{{ cfssl_docker_ca_key }}"
+    dest: "{{ cfssl_docker_root_directory }}/ca-key.pem"
+  notify: restart cfssl
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+  failed_when: cfssl_docker_ca_key == ""
+  no_log: "{{ not cfssl_docker_user_log_sensitive }}"
+
+- name: Create cfssl ca cert
+  copy:
+    content: "{{ cfssl_docker_ca_cert }}"
+    dest: "{{ cfssl_docker_root_directory }}/ca.pem"
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+  notify: restart cfssl
+  no_log: "{{ not cfssl_docker_user_log_sensitive }}"
+  failed_when: cfssl_docker_ca_cert == ""
+
+- name: Create cfssl verify client ca cert
+  copy:
+    content: "{{ cfssl_docker_nginx_tls_client_certificate }}"
+    dest: "{{ cfssl_docker_root_directory }}/verify-client-ca.pem"
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+  notify: restart cfssl-nginx
+  no_log: "{{ not cfssl_docker_user_log_sensitive }}"
+  failed_when: cfssl_docker_nginx_tls_client_certificate == ""
+  when: cfssl_docker_nginx_tls_verify_client|bool
+
+- name: Template docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ cfssl_docker_root_directory }}/docker-compose.yml"
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+
+- name: Template cfssl nginx configuration
+  template:
+    src: nginx.conf.j2
+    dest: "{{ cfssl_docker_root_directory }}/nginx.conf"
+  notify: restart cfssl-nginx
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+
+- name: Create cfssl ca configuration
+  copy:
+    content: "{{ cfssl_docker_ca_config|from_json|to_nice_json }}"
+    dest: "{{ cfssl_docker_root_directory }}/ca.json"
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+  notify: restart cfssl
+  failed_when: cfssl_docker_ca_config == ""
+  no_log: "{{ not cfssl_docker_user_log_sensitive }}"
+
+- name: Template cfssl db configuration
+  template:
+    src: db.json.j2
+    dest: "{{ cfssl_docker_root_directory }}/db.json"
+  notify: restart cfssl
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+  when: cfssl_docker_mysql
+
+- name: Login to docker registry
+  docker_login:
+    username:  "{{ cfssl_docker_login_username }}"
+    password: "{{ cfssl_docker_login_password }}"
+    email: "{{ cfssl_docker_login_email }}"
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+
+- name: Pull cfssl docker image
+  docker_image:
+    name: "{{ cfssl_docker_image }}:{{ cfssl_docker_version }}"
+    force: "{{ cfssl_docker_pull_image|bool }}"
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+
+- name: Pull cfssl-mysql docker image
+  docker_image:
+    name: "{{ cfssl_docker_mysql_image }}"
+    force: "{{ cfssl_docker_mysql_pull_image|bool }}"
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+  when: cfssl_docker_mysql
+
+- name: Pull cfssl-nginx docker image
+  docker_image:
+    name: "{{ cfssl_docker_nginx_image_name }}:{{ cfssl_docker_nginx_version }}"
+    force: "{{ cfssl_docker_nginx_pull_image|bool }}"
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+
+# Actions
+
+- name: Remove existing cfssl-mysql docker container
+  docker_service:
+    project_src: "{{ cfssl_docker_root_directory }}"
+    state: absent
+    services: cfssl-mysql
+  register: remove_existing_cfssl_docker_mysql_container
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+  when: (cfssl_docker_mysql|bool) and
+        (cfssl_docker_mysql_clean|bool)
+
+- name: Remove existing cfssl docker container
+  docker_service:
+    project_src: "{{ cfssl_docker_root_directory }}"
+    state: absent
+    services: cfssl
+  register: remove_existing_cfssl_docker_container
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+  when: (cfssl_docker_mysql|bool) and
+        (cfssl_docker_mysql_clean|bool)
+
+- name: Remove existing persistent cfssl-mysql data
+  file:
+    path: "{{ cfssl_docker_mysql_data_dir }}"
+    state: absent
+  become: yes
+  register: remove_existing_cfssl_docker_mysql_data
+  when: cfssl_docker_mysql_clean|bool
+
+- name: Create persistent cfssl-mysql data dir
+  file:
+    path: "{{ cfssl_docker_mysql_data_dir }}"
+    state: directory
+    owner: 999
+    group: docker
+    mode: 0755
+  become: yes
+  register: create_persistent_cfssl_docker_mysql_data_dir
+  when: (cfssl_docker_mysql|bool) and
+        (cfssl_docker_mysql_data_persist|bool)
+
+- name: Start cfssl-mysql docker container
+  docker_service:
+    project_src: "{{ cfssl_docker_root_directory }}"
+    state: present
+    services: cfssl-mysql
+  register: start_cfssl_docker_mysql
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+
+- name: Wait 20 seconds for cfssl-mysql to start
+  pause:
+    seconds: 20
+  when: start_cfssl_docker_mysql.changed
+
+- name: Start cfssl docker container
+  docker_service:
+    project_src: "{{ cfssl_docker_root_directory }}"
+    state: present
+    services: cfssl
+  register: start_cfssl_docker
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+
+- name: Start cfssl-nginx docker container
+  docker_service:
+    project_src: "{{ cfssl_docker_root_directory }}"
+    state: present
+    services: cfssl-nginx
+  register: start_cfssl_docker_nginx
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+
+- name: Flush handlers to trigger any container restarts
+  meta: flush_handlers
+
+# Post checks
+
+- name: Check cfssl-mysql container started
+  shell: >
+      docker ps -a -q -f name=^/cfssl-mysql$ -f status=running
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+  register: check_cfssl_docker_mysql_started
+  changed_when: False
+  failed_when: (check_cfssl_docker_mysql_started|failed) or
+               (check_cfssl_docker_mysql_started.stdout_lines|count != 1)
+  when: cfssl_docker_mysql|bool
+
+- name: Check cfssl container started
+  shell: >
+      docker ps -a -q -f name=^/cfssl$ -f status=running
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+  register: check_cfssl_docker_started
+  changed_when: False
+  failed_when: (check_cfssl_docker_started|failed) or
+               (check_cfssl_docker_started.stdout_lines|count != 1)
+
+- name: Check cfssl-nginx container started
+  shell: >
+      docker ps -a -q -f name=^/cfssl-nginx$ -f status=running
+  changed_when: False
+  register: check_cfssl_docker_nginx_started
+  failed_when: (check_cfssl_docker_nginx_started|failed) or
+               (check_cfssl_docker_nginx_started.stdout_lines|count != 1)
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"

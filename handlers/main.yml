@@ -1,0 +1,19 @@
+- name: restart cfssl-nginx
+  docker_service:
+    project_src: "{{ cfssl_docker_root_directory }}"
+    state: present
+    restarted: yes
+    services: cfssl-nginx
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+  when: not start_cfssl_docker_nginx.changed
+
+- name: restart cfssl
+  docker_service:
+    project_src: "{{ cfssl_docker_root_directory }}"
+    state: present
+    restarted: yes
+    services: cfssl
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+  when: not start_cfssl_docker.changed

@@ -1,0 +1,51 @@
+---
+# networking
+cfssl_docker_bridge: yes
+cfssl_docker_bridge_subnet: 172.18.0.0/24
+cfssl_docker_bridge_gateway: 172.18.0.1
+
+# cfssl
+cfssl_docker_ca_cert: ""
+cfssl_docker_ca_config: ""
+cfssl_docker_ca_key: ""
+cfssl_docker_image: teknique/cfssl
+cfssl_docker_pull_image: "{{ cfssl_docker_pull_images|bool }}"
+cfssl_docker_pull_images: yes
+cfssl_docker_root_directory: "{{ cfssl_docker_user_home }}"
+cfssl_docker_user: cfssl
+cfssl_docker_groups:
+  - docker
+cfssl_docker_user_home: /srv/cfssl
+cfssl_docker_user_log_sensitive: yes
+cfssl_docker_version: latest
+
+# cfssl mysql
+cfssl_docker_mysql: yes
+cfssl_docker_mysql_container: yes
+cfssl_docker_mysql_clean: no
+cfssl_docker_mysql_data_dir: "{{ cfssl_docker_root_directory }}/cfssl-mysql"
+cfssl_docker_mysql_data_persist: yes
+cfssl_docker_mysql_image: "mysql:5.6.37"
+cfssl_docker_mysql_pull_image: "{{ cfssl_docker_pull_images|bool }}"
+cfssl_docker_mysql_server_id: 1
+
+# cfssl mysql credentials
+cfssl_docker_mysql_host: cfssl-mysql
+cfssl_docker_mysql_port: 3306
+cfssl_docker_mysql_database: "cfssl"
+cfssl_docker_mysql_password: "password"
+cfssl_docker_mysql_root_password: "password"
+cfssl_docker_mysql_user: "cfssl"
+
+# cfssl nginx
+cfssl_docker_nginx_image_name: nginx
+cfssl_docker_nginx_pull_image: "{{ cfssl_docker_pull_images|bool }}"
+cfssl_docker_nginx_tls: yes
+cfssl_docker_nginx_tls_cert_path: /etc/ssl/certs/ssl-cert-snakeoil.pem
+cfssl_docker_nginx_tls_key_path: /etc/ssl/private/ssl-cert-snakeoil.key
+cfssl_docker_nginx_version: 1.13.2
+
+# cfssl nginx client cert verification
+cfssl_docker_nginx_tls_client_certificate: ""
+cfssl_docker_nginx_tls_verify_depth: 3
+cfssl_docker_nginx_tls_verify_client: no

@@ -1,0 +1,4 @@
+{
+  "driver":"mysql",
+  "data_source":"{{ cfssl_docker_mysql_user }}:{{ cfssl_docker_mysql_password }}@tcp({{ cfssl_docker_mysql_host }}:{{ cfssl_docker_mysql_port }})/{{ cfssl_docker_mysql_database }}?parseTime=true"
+}

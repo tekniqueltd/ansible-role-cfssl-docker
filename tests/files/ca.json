@@ -1,0 +1,28 @@
+
+{
+  "CN": "ca.example.domain",
+  "hosts": [
+    "ca.example.domain"
+  ],
+  "key": {
+    "algo": "rsa",
+    "size": 4096
+  },
+  "signing": {
+    "profiles": {
+      "client":  {
+        "usages": ["client auth"],
+        "expiry": "43800h"
+      }
+    }
+  },
+  "names": [
+    {
+      "C": "SC",
+      "L": "Somecity",
+      "O": "Some Organisation",
+      "OU": "Some Organisational Unit",
+      "ST": ""
+    }
+  ]
+}

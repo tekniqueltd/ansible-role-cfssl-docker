@@ -1,0 +1,54 @@
+---
+- name: Test jinja templates and copy files
+  hosts: localhost
+  connection: local
+  tasks:
+    - include_vars: ../defaults/main.yml
+    - set_fact:
+        cfssl_ca_config: "{{ lookup('file','./files/ca.json') }}"
+    - name: Create output directory
+      file:
+        dest: ./output
+        state: directory
+    - name: Test cfssl ca configuration
+      copy:
+        content: "{{ cfssl_ca_config|from_json|to_nice_json }}"
+        dest: ./output/ca.json
+    - name: Create test output directory
+      file:
+        path: ./output
+        state: directory
+    - name: Test jinja template - nginx.conf.j2
+      template:
+        src: ../templates/nginx.conf.j2
+        dest: ./output/nginx.conf
+    - name: Test jinja template - db.json.j2
+      template:
+        src: ../templates/db.json.j2
+        dest: ./output/db.json
+
+    - name: Test jinja template - docker-compose.yml.j2
+      template:
+        src: ../templates/docker-compose.yml.j2
+        dest: ./output/docker-compose.yml
+
+    - set_fact:
+        cfssl_docker_nginx_tls_verify_client: yes
+    - name: Test jinja template (nginx tls verify client) - docker-compose.yml.j2
+      template:
+        src: ../templates/docker-compose.yml.j2
+        dest: ./output/docker-compose-nginx-tls-verify-client.yml
+
+    - set_fact:
+        cfssl_docker_mysql_container: no
+    - name: Test jinja template (no mysql container) - docker-compose.yml.j2
+      template:
+        src: ../templates/docker-compose.yml.j2
+        dest: ./output/docker-compose-no_mysql_container.yml
+
+    - set_fact:
+        cfssl_docker_mysql: no
+    - name: Test jinja template (no mysql) - docker-compose.yml.j2
+      template:
+        src: ../templates/docker-compose.yml.j2
+        dest: ./output/docker-compose-no_mysql.yml
