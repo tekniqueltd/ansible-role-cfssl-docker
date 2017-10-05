@@ -5,6 +5,34 @@
   become: yes
   when: cfssl_docker_nginx_tls
 
+- name: Read tls snakeoil cert
+  slurp:
+    src: /etc/ssl/certs/ssl-cert-snakeoil.pem
+  register: slurp_nginx_tls_cert
+  changed_when: False
+  when: (cfssl_docker_nginx_tls|bool) and
+        (cfssl_docker_nginx_tls_cert == "")
+
+- name: Set cfssl_docker_nginx_tls_cert to slurped value
+  set_fact:
+    cfssl_docker_nginx_tls_cert: "{{ slurp_nginx_tls_cert.content|b64decode }}"
+  when: (cfssl_docker_nginx_tls|bool) and
+        (cfssl_docker_nginx_tls_cert == "")
+
+- name: Read tls snakeoil key
+  slurp:
+    src: /etc/ssl/private/ssl-cert-snakeoil.key
+  register: slurp_nginx_tls_key
+  changed_when: False
+  when: (cfssl_docker_nginx_tls|bool) and
+        (cfssl_docker_nginx_tls_key == "")
+
+- name: Set cfssl_docker_nginx_tls_key to slurped value
+  set_fact:
+    cfssl_docker_nginx_tls_key: "{{ slurp_nginx_tls_key.content|b64decode }}"
+  when: (cfssl_docker_nginx_tls|bool) and
+        (cfssl_docker_nginx_tls_key == "")
+
 - name: Ensure cfssl user exists
   user:
     name: "{{ cfssl_docker_user }}"
@@ -44,6 +72,28 @@
   no_log: "{{ not cfssl_docker_user_log_sensitive }}"
   failed_when: cfssl_docker_nginx_tls_client_certificate == ""
   when: cfssl_docker_nginx_tls_verify_client|bool
+
+- name: Create cfssl nginx server cert
+  copy:
+    content: "{{ cfssl_docker_nginx_tls_cert }}"
+    dest: "{{ cfssl_docker_root_directory }}/server.pem"
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+  notify: restart cfssl-nginx
+  no_log: "{{ not cfssl_docker_user_log_sensitive }}"
+  failed_when: cfssl_docker_nginx_tls_cert == ""
+  when: cfssl_docker_nginx_tls|bool
+
+- name: Create cfssl nginx server key
+  copy:
+    content: "{{ cfssl_docker_nginx_tls_key }}"
+    dest: "{{ cfssl_docker_root_directory }}/server-key.pem"
+  become: yes
+  become_user: "{{ cfssl_docker_user }}"
+  notify: restart cfssl-nginx
+  no_log: "{{ not cfssl_docker_user_log_sensitive }}"
+  failed_when: cfssl_docker_nginx_tls_key == ""
+  when: cfssl_docker_nginx_tls|bool
 
 - name: Template docker-compose.yml
   template:

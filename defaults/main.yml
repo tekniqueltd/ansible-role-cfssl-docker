@@ -41,8 +41,8 @@ cfssl_docker_mysql_user: "cfssl"
 cfssl_docker_nginx_image_name: nginx
 cfssl_docker_nginx_pull_image: "{{ cfssl_docker_pull_images|bool }}"
 cfssl_docker_nginx_tls: yes
-cfssl_docker_nginx_tls_cert_path: /etc/ssl/certs/ssl-cert-snakeoil.pem
-cfssl_docker_nginx_tls_key_path: /etc/ssl/private/ssl-cert-snakeoil.key
+cfssl_docker_nginx_tls_cert: ""
+cfssl_docker_nginx_tls_key: ""
 cfssl_docker_nginx_version: 1.13.2
 
 # cfssl nginx client cert verification

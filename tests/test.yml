@@ -4,24 +4,91 @@
   connection: local
   tasks:
     - include_vars: ../defaults/main.yml
+
     - set_fact:
         cfssl_ca_config: "{{ lookup('file','./files/ca.json') }}"
+
     - name: Create output directory
       file:
         dest: ./output
         state: directory
+
+    - name: Read tls snakeoil cert
+      slurp:
+        src: ./files/ssl-cert-snakeoil.pem
+      register: slurp_nginx_tls_cert
+      changed_when: False
+      when: (cfssl_docker_nginx_tls|bool) and
+            (cfssl_docker_nginx_tls_cert == "")
+
+    - name: Set cfssl_docker_nginx_tls_cert to slurped value
+      set_fact:
+        cfssl_docker_nginx_tls_cert: "{{ slurp_nginx_tls_cert.content|b64decode }}"
+      when: (cfssl_docker_nginx_tls|bool) and
+            (cfssl_docker_nginx_tls_cert == "")
+
+    - name: Read tls snakeoil key
+      slurp:
+        src: ./files/ssl-cert-snakeoil.key
+      register: slurp_nginx_tls_key
+      changed_when: False
+      when: (cfssl_docker_nginx_tls|bool) and
+            (cfssl_docker_nginx_tls_key == "")
+
+    - name: Set cfssl_docker_nginx_tls_key to slurped value
+      set_fact:
+        cfssl_docker_nginx_tls_key: "{{ slurp_nginx_tls_key.content|b64decode }}"
+      when: (cfssl_docker_nginx_tls|bool) and
+            (cfssl_docker_nginx_tls_key == "")
+
+    - name: Create cfssl nginx server cert
+      copy:
+        content: "{{ cfssl_docker_nginx_tls_cert }}"
+        dest: ./output/server.pem
+      no_log: "{{ not cfssl_docker_user_log_sensitive }}"
+      failed_when: cfssl_docker_nginx_tls_cert == ""
+      when: cfssl_docker_nginx_tls|bool
+
+    - name: Create cfssl nginx server key
+      copy:
+        content: "{{ cfssl_docker_nginx_tls_key }}"
+        dest: ./output/server-key.pem
+      no_log: "{{ not cfssl_docker_user_log_sensitive }}"
+      failed_when: cfssl_docker_nginx_tls_key == ""
+      when: cfssl_docker_nginx_tls|bool
+
+    - name: Read nginx server cert modulus
+      shell: >
+        openssl x509 -noout -modulus -in ./output/server.pem
+      register: read_nginx_cert_modulus
+      changed_when: False
+
+    - name: Read nginx server key modulus
+      shell: >
+        openssl rsa -noout -modulus -in ./output/server-key.pem
+      register: read_nginx_key_modulus
+      changed_when: False
+
+    - name: Ensure nginx server cert and key match
+      fail:
+      when: read_nginx_key_modulus.stdout != read_nginx_cert_modulus.stdout
+      changed_when: False
+
     - name: Test cfssl ca configuration
       copy:
         content: "{{ cfssl_ca_config|from_json|to_nice_json }}"
         dest: ./output/ca.json
+
     - name: Create test output directory
       file:
         path: ./output
         state: directory
+
     - name: Test jinja template - nginx.conf.j2
       template:
         src: ../templates/nginx.conf.j2
         dest: ./output/nginx.conf
+
     - name: Test jinja template - db.json.j2
       template:
         src: ../templates/db.json.j2

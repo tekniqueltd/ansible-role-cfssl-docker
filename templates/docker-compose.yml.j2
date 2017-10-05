@@ -75,8 +75,8 @@ services:
     volumes:
       - {{ cfssl_docker_root_directory }}/nginx.conf:/etc/nginx/conf.d/cfssl.conf
 {% if cfssl_docker_nginx_tls|bool %}
-      - {{ cfssl_docker_nginx_tls_key_path }}:/etc/ssl/private/cfssl.key
-      - {{ cfssl_docker_nginx_tls_cert_path }}:/etc/ssl/certs/cfssl.pem
+      - {{ cfssl_docker_root_directory }}/server-key.pem:/etc/ssl/private/cfssl.key
+      - {{ cfssl_docker_root_directory }}/server.pem:/etc/ssl/certs/cfssl.pem
 {% if cfssl_docker_nginx_tls_verify_client|bool %}
       - {{ cfssl_docker_root_directory }}/verify-client-ca.pem:/etc/ssl/certs/verify-client-ca.pem
 {% endif %}
