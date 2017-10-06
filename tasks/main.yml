@@ -3,7 +3,7 @@
   apt:
     name: ssl-cert
   become: yes
-  when: cfssl_docker_nginx_tls
+  when: cfssl_docker_nginx_tls|bool
 
 - name: Read tls snakeoil cert
   slurp:
@@ -127,7 +127,7 @@
   notify: restart cfssl
   become: yes
   become_user: "{{ cfssl_docker_user }}"
-  when: cfssl_docker_mysql
+  when: cfssl_docker_mysql|bool
 
 - name: Login to docker registry
   docker_login:
@@ -150,7 +150,7 @@
     force: "{{ cfssl_docker_mysql_pull_image|bool }}"
   become: yes
   become_user: "{{ cfssl_docker_user }}"
-  when: cfssl_docker_mysql
+  when: cfssl_docker_mysql|bool
 
 - name: Pull cfssl-nginx docker image
   docker_image:
