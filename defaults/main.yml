@@ -16,7 +16,7 @@ cfssl_docker_user: cfssl
 cfssl_docker_groups:
   - docker
 cfssl_docker_user_home: /srv/cfssl
-cfssl_docker_user_log_sensitive: yes
+cfssl_docker_log_sensitive: yes
 cfssl_docker_version: latest
 
 # cfssl mysql

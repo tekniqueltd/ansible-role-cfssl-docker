@@ -45,7 +45,7 @@
       copy:
         content: "{{ cfssl_docker_nginx_tls_cert }}"
         dest: ./output/server.pem
-      no_log: "{{ not cfssl_docker_user_log_sensitive }}"
+      no_log: "{{ not cfssl_docker_log_sensitive }}"
       failed_when: cfssl_docker_nginx_tls_cert == ""
       when: cfssl_docker_nginx_tls|bool
 
@@ -53,7 +53,7 @@
       copy:
         content: "{{ cfssl_docker_nginx_tls_key }}"
         dest: ./output/server-key.pem
-      no_log: "{{ not cfssl_docker_user_log_sensitive }}"
+      no_log: "{{ not cfssl_docker_log_sensitive }}"
       failed_when: cfssl_docker_nginx_tls_key == ""
       when: cfssl_docker_nginx_tls|bool
 
