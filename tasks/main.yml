@@ -170,7 +170,10 @@
   become: yes
   become_user: "{{ cfssl_docker_user }}"
   when: (cfssl_docker_mysql|bool) and
-        (cfssl_docker_mysql_clean|bool)
+        (
+          (cfssl_docker_mysql_clean|bool) or
+          (not cfssl_docker_mysql_container|bool)
+        )
 
 - name: Remove existing cfssl docker container
   docker_service:
