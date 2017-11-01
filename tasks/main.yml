@@ -162,10 +162,9 @@
 # Actions
 
 - name: Remove existing cfssl-mysql docker container
-  docker_service:
-    project_src: "{{ cfssl_docker_root_directory }}"
+  docker_container:
     state: absent
-    services: cfssl-mysql
+    name: cfssl-mysql
   register: remove_existing_cfssl_docker_mysql_container
   become: yes
   become_user: "{{ cfssl_docker_user }}"
