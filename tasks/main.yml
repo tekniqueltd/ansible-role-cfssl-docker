@@ -42,6 +42,15 @@
     groups: "{{ cfssl_docker_groups }}"
   become: yes
 
+- name: Restrict cfssl home directory permissions
+  file:
+    path: "{{ cfssl_docker_user_home }}"
+    state: directory
+    mode: 0700
+    owner: "{{ cfssl_docker_user }}"
+    group: "{{ cfssl_docker_user }}"
+  become: yes
+
 - name: Create cfssl ca key
   copy:
     content: "{{ cfssl_docker_ca_key }}"
