@@ -25,6 +25,10 @@ services:
     volumes:
       - {{ cfssl_docker_mysql_data_dir }}:/var/lib/mysql
 {% endif %}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
 {% if cfssl_docker_bridge|bool %}
     networks:
       - cfssl
@@ -53,6 +57,10 @@ services:
 {% if cfssl_docker_mysql|bool %}
       - {{ cfssl_docker_root_directory }}/db.json:/db.json
 {% endif %}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
 {% if cfssl_docker_bridge|bool %}
     networks:
       - cfssl
@@ -81,6 +89,10 @@ services:
       - {{ cfssl_docker_root_directory }}/verify-client-ca.pem:/etc/ssl/certs/verify-client-ca.pem
 {% endif %}
 {% endif %}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
 {% if cfssl_docker_bridge|bool %}
     networks:
       - cfssl
