@@ -49,3 +49,10 @@ cfssl_docker_nginx_version: 1.13.2
 cfssl_docker_nginx_tls_client_certificate: ""
 cfssl_docker_nginx_tls_verify_depth: 3
 cfssl_docker_nginx_tls_verify_client: no
+
+# See https://github.com/cloudflare/cfssl/blob/master/doc/api/intro.txt
+# for a list of all available endpoints and their associated methods
+cfssl_docker_nginx_allow_endpoints:
+  - name: sign
+    methods:
+      - POST
