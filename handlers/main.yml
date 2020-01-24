@@ -1,5 +1,5 @@
 - name: restart cfssl-nginx
-  docker_service:
+  docker_compose:
     project_src: "{{ cfssl_docker_root_directory }}"
     state: present
     restarted: yes
@@ -9,7 +9,7 @@
   when: not start_cfssl_docker_nginx.changed
 
 - name: restart cfssl
-  docker_service:
+  docker_compose:
     project_src: "{{ cfssl_docker_root_directory }}"
     state: present
     restarted: yes
